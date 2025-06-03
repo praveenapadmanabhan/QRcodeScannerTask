@@ -1,6 +1,6 @@
 import { Camera, CameraView } from 'expo-camera';
 import { useEffect, useState } from 'react';
-import { Button, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'; // Import Modal and Image, TouchableOpacity
+import { Button, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // API config
 const API_URL = 'https://erp.ayaanmr.com/urlapi/api/url/getapi';
@@ -31,7 +31,7 @@ const BarcodeScannerScreen = () => {
     };
 
     const handleBarCodeScanned = async ({ type, data }) => {
-        setScanned(true); // Set scanned to true immediately to pause scanning
+        setScanned(true);
         setScannedId(null);
         setItemDetails(null);
         setError(null);
@@ -49,48 +49,54 @@ const BarcodeScannerScreen = () => {
         setLoading(true);
         setError(null);
         try {
-            // Your existing API call logic
-            const url = `${API_URL}?APIKEY=${API_KEY}&UID=${UID}&UPW=${UPW}&P1=${id}&P2=${id}&P3=&P4=`;
-            console.log('Fetching URL:', url); //
-            const response = await fetch(url); //
-            if (!response.ok) { //
-                const errorText = await response.text(); //
-                throw new Error(`Error: ${response.status} ${errorText}`); //
+            const url = `${API_URL}?APIKEY=${API_KEY}&UID=${UID}&UPW=${UPW}&P1=1&P2=99999&P3=&P4=`;
+            console.log('Fetching URL:', url);
+            const response = await fetch(url);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error: ${response.status} ${errorText}`);
             }
-            const result = await response.json(); //
-            console.log('API Response:', result); //
+            const result = await response.json();
+            console.log('API Response:', result);
 
-            if (Array.isArray(result) && result.length > 0) { //
-                setItemDetails(result[0]); //
+            if (Array.isArray(result) && result.length > 0) {
+                // Filter item by scanned ID
+                const matchedItem = result.find(item => item.ItmID === id);
+                if (matchedItem) {
+                    setItemDetails(matchedItem);
+                } else {
+                    showCustomAlert('No item found matching the scanned ID');
+                    setItemDetails(null);
+                }
             } else {
-                showCustomAlert('No data found for the scanned ID'); //
-                setItemDetails(null); //
+                showCustomAlert('No data found from API');
+                setItemDetails(null);
             }
-        } catch (error) { //
-            console.error('Error fetching item details:', error); //
-            setError('Failed to fetch item details.'); //
-            showCustomAlert('Failed to fetch item details. ' + error.message); //
+        } catch (error) {
+            console.error('Error fetching item details:', error);
+            setError('Failed to fetch item details.');
+            showCustomAlert('Failed to fetch item details. ' + error.message);
         } finally {
-            setLoading(false); //
+            setLoading(false);
         }
     };
 
     if (hasPermission === null) {
-        return <Text>Requesting for camera permission</Text>; //
+        return <Text>Requesting for camera permission</Text>;
     }
     if (hasPermission === false) {
-        return <Text>No access to camera</Text>; //
+        return <Text>No access to camera</Text>;
     }
 
     return (
         <View style={styles.container}>
             <View style={styles.cameraWrapper}>
                 <CameraView
-                    onBarcodeScanned={scanned ? undefined : handleBarCodeScanned} //
+                    onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
                     barcodeScannerSettings={{
-                        barcodeTypes: ["qr", "pdf417", "ean13", "code128"], //
+                        barcodeTypes: ["qr", "pdf417", "ean13", "code128"],
                     }}
-                    style={StyleSheet.absoluteFillObject} //
+                    style={StyleSheet.absoluteFillObject}
                 />
 
                 <View style={styles.innerOverlay}>
@@ -119,7 +125,6 @@ const BarcodeScannerScreen = () => {
                             resizeMode="contain"
                         />
                     )}
-                    {/* Display other details if available and desired */}
                     {ItemDetails.OtherDetail1 && <Text style={styles.detailText}>Other Detail 1: {ItemDetails.OtherDetail1}</Text>}
                 </View>
             )}
@@ -128,14 +133,13 @@ const BarcodeScannerScreen = () => {
                 <View style={styles.scanAgainButton}>
                     <Button title={'Tap to Scan Again'} onPress={() => {
                         setScanned(false);
-                        setItemDetails(null); // Clear previous details when scanning again
+                        setItemDetails(null);
                         setScannedId(null);
                         setError(null);
                     }} />
                 </View>
             )}
 
-            {/* Custom Alert Modal */}
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'white',
-        paddingVertical: 20, // Add some vertical padding
+        paddingVertical: 20,
     },
     cameraWrapper: {
         width: 250,
@@ -172,7 +176,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderRadius: 10,
         position: 'relative',
-        marginBottom: 20, // Add margin below camera
+        marginBottom: 20,
     },
     innerOverlay: {
         ...StyleSheet.absoluteFillObject,
@@ -236,7 +240,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ccc',
     },
-    // Modal Styles
     centeredView: {
         flex: 1,
         justifyContent: 'center',
