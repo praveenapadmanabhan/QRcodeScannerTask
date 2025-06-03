@@ -50,7 +50,7 @@ const BarcodeScannerScreen = () => {
         setError(null);
         try {
             // Your existing API call logic
-            const url = `${API_URL}?APIKEY=${API_KEY}&UID=${UID}&UPW=${UPW}&P1=1&P2=99999&P3=${id}&P4=`;
+            const url = `${API_URL}?APIKEY=${API_KEY}&UID=${UID}&UPW=${UPW}&P1=${id}&P2=${id}&P3=&P4=`;
             console.log('Fetching URL:', url); //
             const response = await fetch(url); //
             if (!response.ok) { //
