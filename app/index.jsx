@@ -1,8 +1,8 @@
+import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
 
-const splashscreen =() => {
+const SplashScreen =() => {
   const router = useRouter();
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -18,7 +18,7 @@ const splashscreen =() => {
     </View>
   );
 };
-export default splashscreen;
+export default SplashScreen;
 
 const styles = StyleSheet.create({
     container: {

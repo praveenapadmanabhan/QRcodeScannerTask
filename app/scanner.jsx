@@ -1,9 +1,8 @@
 import { Camera, CameraView } from 'expo-camera';
 import { useEffect, useState } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native'; // Ensure StyleSheet is imported
+import { Button, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'; // Import Modal and Image, TouchableOpacity
 
-
-//API config
+// API config
 const API_URL = 'https://erp.ayaanmr.com/urlapi/api/url/getapi';
 const API_KEY = "TESTKEYITM";
 const UID = "API";
@@ -26,19 +25,18 @@ const BarcodeScannerScreen = () => {
         })();
     }, []);
 
-    //Custom Alert Helper
     const showCustomAlert = (message) => {
         setModalMessage(message);
         setShowModal(true);
     };
-        //QR code scanning
+
     const handleBarCodeScanned = async ({ type, data }) => {
-        setScanned(true);
+        setScanned(true); // Set scanned to true immediately to pause scanning
         setScannedId(null);
         setItemDetails(null);
         setError(null);
-       
-       const id = parseInt(data, 10);
+
+        const id = parseInt(data, 10);
         if (isNaN(id)) {
             showCustomAlert('Invalid QR code scanned');
             return;
@@ -47,56 +45,54 @@ const BarcodeScannerScreen = () => {
         await fetchItemDetails(id);
     };
 
-    //connecting Backend....
     const fetchItemDetails = async (id) => {
         setLoading(true);
         setError(null);
         try {
-            const url = `${API_URL}?api_key=${API_KEY}&uid=${UID}&upw=${UPW}&id=${id}`;
-            console.log('Fetching URL:', url);
-            const response = await fetch(url);
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error: ${response.status} ${errorText}`);
+            // Your existing API call logic
+            const url = `${API_URL}?APIKEY=${API_KEY}&UID=${UID}&UPW=${UPW}&P1=1&P2=99999&P3=${id}&P4=`;
+            console.log('Fetching URL:', url); //
+            const response = await fetch(url); //
+            if (!response.ok) { //
+                const errorText = await response.text(); //
+                throw new Error(`Error: ${response.status} ${errorText}`); //
             }
-            const result = await response.json();
-            console.log('API Response:', result);
+            const result = await response.json(); //
+            console.log('API Response:', result); //
 
-            if (Array.isArray(result) && result.length > 0) {
-                setItemDetails(result[0]);
+            if (Array.isArray(result) && result.length > 0) { //
+                setItemDetails(result[0]); //
             } else {
-                showCustomAlert('No data found for the scanned ID');
-                setItemDetails(null);
+                showCustomAlert('No data found for the scanned ID'); //
+                setItemDetails(null); //
             }
-        } catch (error) {
-            console.error('Error fetching item details:', error);
-            setError('Failed to fetch item details. Please try again.', error.message);
-            showCustomAlert('Failed to fetch item details.' + error.message);
+        } catch (error) { //
+            console.error('Error fetching item details:', error); //
+            setError('Failed to fetch item details.'); //
+            showCustomAlert('Failed to fetch item details. ' + error.message); //
         } finally {
-            setLoading(false);
+            setLoading(false); //
         }
     };
 
-//display msg based on camera permission
     if (hasPermission === null) {
-        return <Text>Requesting for camera permission</Text>;
+        return <Text>Requesting for camera permission</Text>; //
     }
     if (hasPermission === false) {
-        return <Text>No access to camera</Text>;
+        return <Text>No access to camera</Text>; //
     }
 
     return (
-        <View style={styles.container}> {/* This container will manage the overall white background */}
-            <View style={styles.cameraWrapper}> {/* Wrapper for the fixed-size camera and its overlay */}
+        <View style={styles.container}>
+            <View style={styles.cameraWrapper}>
                 <CameraView
-                    onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                    onBarcodeScanned={scanned ? undefined : handleBarCodeScanned} //
                     barcodeScannerSettings={{
-                        barcodeTypes: ["qr", "pdf417", "ean13", "code128"],
+                        barcodeTypes: ["qr", "pdf417", "ean13", "code128"], //
                     }}
-                    style={StyleSheet.absoluteFillObject} // CameraView now fills its *wrapper*
+                    style={StyleSheet.absoluteFillObject} //
                 />
 
-                {/* Overlay for the square scanning area, now relative to cameraWrapper */}
                 <View style={styles.innerOverlay}>
                     <View style={styles.unfocusedContainerTopBottom} />
                     <View style={styles.middleContainer}>
@@ -108,12 +104,56 @@ const BarcodeScannerScreen = () => {
                 </View>
             </View>
 
-            {scanned && (
-                // Wrap the Button in a View to apply styles to its container
-                <View style={styles.scanAgainButton}>
-                    <Button title={'Tap to Scan Again'} onPress={() => setScanned(false)} />
+            {loading && <Text style={styles.statusText}>Loading item details...</Text>}
+            {error && <Text style={styles.errorText}>Error: {error}</Text>}
+
+            {ItemDetails && (
+                <View style={styles.itemDetailsContainer}>
+                    <Text style={styles.detailTitle}>Scanned Item Details:</Text>
+                    <Text style={styles.detailText}>Item ID: {ItemDetails.ItmID}</Text>
+                    <Text style={styles.detailText}>Item Name: {ItemDetails.ItmName}</Text>
+                    {ItemDetails.ItmThmbnl && (
+                        <Image
+                            source={{ uri: `data:image/jpeg;base64,${ItemDetails.ItmThmbnl}` }}
+                            style={styles.itemImage}
+                            resizeMode="contain"
+                        />
+                    )}
+                    {/* Display other details if available and desired */}
+                    {ItemDetails.OtherDetail1 && <Text style={styles.detailText}>Other Detail 1: {ItemDetails.OtherDetail1}</Text>}
                 </View>
             )}
+
+            {scanned && (
+                <View style={styles.scanAgainButton}>
+                    <Button title={'Tap to Scan Again'} onPress={() => {
+                        setScanned(false);
+                        setItemDetails(null); // Clear previous details when scanning again
+                        setScannedId(null);
+                        setError(null);
+                    }} />
+                </View>
+            )}
+
+            {/* Custom Alert Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showModal}
+                onRequestClose={() => setShowModal(false)}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalText}>{modalMessage}</Text>
+                        <TouchableOpacity
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => setShowModal(false)}
+                        >
+                            <Text style={styles.textStyle}>OK</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -123,43 +163,119 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'white', // This makes the background outside the camera white
+        backgroundColor: 'white',
+        paddingVertical: 20, // Add some vertical padding
     },
     cameraWrapper: {
-        width: 250, // Fixed width for the camera area
-        height: 250, // Fixed height for the camera area
-        overflow: 'hidden', // Crucial to clip the camera feed to this size
-        borderRadius: 10, // Optional: gives a slightly rounded look
-        position: 'relative', // Needed for absolute positioning of CameraView
+        width: 250,
+        height: 250,
+        overflow: 'hidden',
+        borderRadius: 10,
+        position: 'relative',
+        marginBottom: 20, // Add margin below camera
     },
     innerOverlay: {
-        ...StyleSheet.absoluteFillObject, // This overlay fills the cameraWrapper
+        ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
-    // Using distinct styles for top/bottom and left/right unfocused areas for clarity
+    },
     unfocusedContainerTopBottom: {
-        flex: 1, 
-        backgroundColor: 'rgba(0,0,0,0.6)', // Dimmed effect around the central square
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
     },
     middleContainer: {
         flexDirection: 'row',
-        height: 250, // Height of the "focused" row (should match cameraWrapper height)
+        height: 250,
     },
     unfocusedContainerLeftRight: {
-        flex: 1, // Takes remaining horizontal space
-        backgroundColor: 'rgba(0,0,0,0.6)', // Dimmed effect around the central square
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
     },
     focusedContainer: {
-        width: 250, // Width of the square scanning area (should match cameraWrapper width)
+        width: 250,
         borderWidth: 2,
-        borderColor: '#00FF00', // Green border for the square
+        borderColor: '#00FF00',
     },
     scanAgainButton: {
-        marginTop: 20, // Add some space below the camera area
-    }
-
-}
+        marginTop: 20,
+    },
+    statusText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#007bff',
+    },
+    errorText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: 'red',
+        textAlign: 'center',
+        paddingHorizontal: 20,
+    },
+    itemDetailsContainer: {
+        marginTop: 20,
+        padding: 20,
+        width: '90%',
+        backgroundColor: '#f0f0f0',
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    detailTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    detailText: {
+        fontSize: 16,
+        marginBottom: 5,
+        textAlign: 'center',
+    },
+    itemImage: {
+        width: 150,
+        height: 150,
+        marginTop: 10,
+        borderWidth: 1,
+        borderColor: '#ccc',
+    },
+    // Modal Styles
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: "center",
+        fontSize: 16,
+    },
+    button: {
+        borderRadius: 10,
+        padding: 10,
+        elevation: 2
+    },
+    buttonClose: {
+        backgroundColor: "#2196F3",
+    },
+    textStyle: {
+        color: "white",
+        fontWeight: "bold",
+        textAlign: "center"
+    },
 });
-
 
 export default BarcodeScannerScreen;
